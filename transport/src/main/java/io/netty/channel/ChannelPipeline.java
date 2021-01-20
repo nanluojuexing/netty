@@ -212,7 +212,7 @@ import java.util.NoSuchElementException;
  * still process tasks in a serial fashion per {@link ChannelHandlerContext} and so guarantee ordering. Due the ordering
  * it may still become a bottle-neck. If ordering is not a requirement for your use-case you may want to consider using
  * {@link UnorderedThreadPoolEventExecutor} to maximize the parallelism of the task execution.
- *
+ *o n
  * <h3>Thread safety</h3>
  * <p>
  * A {@link ChannelHandler} can be added or removed at any time because a {@link ChannelPipeline} is thread safe.

@@ -78,12 +78,20 @@ public abstract class SingleThreadEventLoop extends SingleThreadEventExecutor im
 
     @Override
     public ChannelFuture register(Channel channel) {
+        // this 就是 EventLoop（单例线程池）
+        // DefaultChannelPromise 实现了future类，增加了很多功能，
+        // 比如 JDK 的 Future 虽然是异步的，但仍需要 get 方法 阻塞获取结果才能坐之后的事情，
+        // 而 Promise 可以通过设置监听器的方式，在方法执行成功或者失败的情况下无需等待，就能执行监听器中的任务，效率币 Future 高很多
+        // 从某种程度上说，Future 是非阻塞，而Promise 才是正在的异步
         return register(new DefaultChannelPromise(channel, this));
     }
 
     @Override
     public ChannelFuture register(final ChannelPromise promise) {
         ObjectUtil.checkNotNull(promise, "promise");
+        // promise.channel() 获取到 NioServerSocketChannel
+        // unsafe() 获取到 NioMessageUnsafe
+        // NioMessageUnsafe 的 register 方法，参数时 promise 和 NioEventLoop。最后返回了这个 promise 方法
         promise.channel().unsafe().register(this, promise);
         return promise;
     }

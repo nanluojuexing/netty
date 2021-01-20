@@ -31,7 +31,7 @@ public class Http2SecurityUtilTest {
 
     @Test
     public void testTLSv13CiphersIncluded() throws SSLException {
-        Assume.assumeTrue(SslProvider.isTlsv13Supported(SslProvider.JDK));
+//        Assume.assumeTrue(SslProvider.isTlsv13Supported(SslProvider.JDK));
         testCiphersIncluded("TLSv1.3");
     }
 

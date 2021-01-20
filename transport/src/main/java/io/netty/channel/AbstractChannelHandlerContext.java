@@ -146,7 +146,17 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
         return this;
     }
 
+    /**
+     * Netty 初始了一个 pipeline，pipeline 内部维护着一个 ChannelContextContext 双向链表，
+     * Context 是对 Handler 的封装，是 pipeline 和 Handler 沟通的关键，
+     * 每次信息入站，从 head 节点开始，执行 context 的 handler 的对应方法，执行结束通过 findContextInbound() 方法找到下一个节点，继续执行；
+     * tail 节点的 channelRegistered 什么都不做
+     *
+     * @param next
+     */
     static void invokeChannelRegistered(final AbstractChannelHandlerContext next) {
+        // 获取 head 的 执行器EventLoop，用于判断是否在当前线程，如果在当前线程，
+        // 则立即执行 invokeChannelRegistered 方法，否则异步执行，我们这里当然是在当前线程。所以同步执行
         EventExecutor executor = next.executor();
         if (executor.inEventLoop()) {
             next.invokeChannelRegistered();
@@ -163,6 +173,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private void invokeChannelRegistered() {
         if (invokeHandler()) {
             try {
+                // 在这里执行 Context 对应的 handler 的 channelRegistered 方法
                 ((ChannelInboundHandler) handler()).channelRegistered(this);
             } catch (Throwable t) {
                 invokeExceptionCaught(t);
@@ -876,6 +887,7 @@ abstract class AbstractChannelHandlerContext implements ChannelHandlerContext, R
     private AbstractChannelHandlerContext findContextInbound(int mask) {
         AbstractChannelHandlerContext ctx = this;
         EventExecutor currentExecutor = executor();
+        // pipeline 是一个双向链表，这里链表起作用了，通过找到当前节点的下一个节点，并返回，但这判断的是：必须是入站类型的
         do {
             ctx = ctx.next;
         } while (skipContext(ctx, currentExecutor, mask, MASK_ONLY_INBOUND));

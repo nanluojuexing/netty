@@ -70,8 +70,13 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
      */
     protected AbstractChannel(Channel parent) {
         this.parent = parent;
+        // channel的唯一标识 全局唯一
         id = newId();
+        // 创建 unsafe 操作底层读写，这里serverSocket 和 nioSocketChannel 不一样， newUnsafe()方法去
+        // NioSocketChannel$NioSocketChannelUnsafe， 是 NioSocketChannel 的内部类。
         unsafe = newUnsafe();
+        // pipeline ，是相同的 DefaultChannelPipeline。同样 pipeline 也会自己创建自己的 head 节点和 tail 节点
+        //  pipeline 负责业务处理器编排。这里已经初始化节点 HeadContext TailContext
         pipeline = newChannelPipeline();
     }
 
@@ -463,11 +468,12 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
             }
 
             AbstractChannel.this.eventLoop = eventLoop;
-
+            //这里为false 进 else 方法
             if (eventLoop.inEventLoop()) {
                 register0(promise);
             } else {
                 try {
+                    //
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {
@@ -493,20 +499,27 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                     return;
                 }
                 boolean firstRegistration = neverRegistered;
+                //调用 JDK 底层的 register() 进行注册
                 doRegister();
                 neverRegistered = false;
                 registered = true;
 
+                // 触发 handlerAdded 事件
+                // pipeline 的 addLast 方法中，添加了一个 handle，DefaultPipeline.addLast() -> callHandlerCallbackLater 方法会根据 added 属性包装成一个 task（add 任务或 removed 任务），成为任务链表上的一个节点
                 // Ensure we call handlerAdded(...) before we actually notify the promise. This is needed as the
                 // user may already fire events through the pipeline in the ChannelFutureListener.
                 pipeline.invokeHandlerAddedIfNeeded();
 
+                // safeSetSuccess(promise) 方法就是通知 promise 已经成功了，你可以执行监听器的方法了，而这里的监听器则是我们的 dobind 方法中设置的
                 safeSetSuccess(promise);
+                // 触发 channelRegistered 事件
                 pipeline.fireChannelRegistered();
                 // Only fire a channelActive if the channel has never been registered. This prevents firing
                 // multiple channel actives if the channel is deregistered and re-registered.
+                // 此时channel还没绑定到注册地址，处于非活跃状态
                 if (isActive()) {
                     if (firstRegistration) {
+                        // Channel 当前状态为活跃时，触发 channelActive 事件
                         pipeline.fireChannelActive();
                     } else if (config().isAutoRead()) {
                         // This channel was registered before and autoRead() is set. This means we need to begin read

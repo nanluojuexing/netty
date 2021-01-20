@@ -78,9 +78,11 @@ public abstract class AbstractNioChannel extends AbstractChannel {
      */
     protected AbstractNioChannel(Channel parent, SelectableChannel ch, int readInterestOp) {
         super(parent);
+        //记录公用的属性值
         this.ch = ch;
         this.readInterestOp = readInterestOp;
         try {
+            // 设置非阻塞模式
             ch.configureBlocking(false);
         } catch (IOException e) {
             try {
@@ -377,6 +379,7 @@ public abstract class AbstractNioChannel extends AbstractChannel {
         boolean selected = false;
         for (;;) {
             try {
+                // javaChannel().register 负责调用jdk底层，将channel注册到selectpr上，this是串如的netty自己实现的channel对象
                 selectionKey = javaChannel().register(eventLoop().unwrappedSelector(), 0, this);
                 return;
             } catch (CancelledKeyException e) {

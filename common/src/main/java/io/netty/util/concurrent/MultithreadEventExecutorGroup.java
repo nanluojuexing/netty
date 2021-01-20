@@ -44,6 +44,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
      * @param args              arguments which will passed to each {@link #newChild(Executor, Object...)} call
      */
     protected MultithreadEventExecutorGroup(int nThreads, ThreadFactory threadFactory, Object... args) {
+        // ThreadPerTaskExecutor可以看作是一个线程池，bossGroup中就是一个线程的线程池
         this(nThreads, threadFactory == null ? null : new ThreadPerTaskExecutor(threadFactory), args);
     }
 
@@ -72,6 +73,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             throw new IllegalArgumentException(String.format("nThreads: %d (expected: > 0)", nThreads));
         }
 
+        //这里可以看到，创建了ThreadPerTaskExecutor线程池对象
+        // newDefaultThreadFactory()创建默认线程工程，该方法里面创建了线程池的名称nioEventLoopGroup-x-xx这种形式 , x与xx代表第几个线程组和第几个线程
         if (executor == null) {
             executor = new ThreadPerTaskExecutor(newDefaultThreadFactory());
         }
@@ -81,6 +84,8 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
         for (int i = 0; i < nThreads; i ++) {
             boolean success = false;
             try {
+                // newChild(executor, args)会在底层创建一个NioEventLoop线程，并将线程执行器executor保存
+                // 还保存了一个MpscQueue任务队列与绑定了selector选择器
                 children[i] = newChild(executor, args);
                 success = true;
             } catch (Exception e) {
@@ -108,6 +113,7 @@ public abstract class MultithreadEventExecutorGroup extends AbstractEventExecuto
             }
         }
 
+        // 这里是根据一定的算法取出一个NioEventLoop线程
         chooser = chooserFactory.newChooser(children);
 
         final FutureListener<Object> terminationListener = new FutureListener<Object>() {

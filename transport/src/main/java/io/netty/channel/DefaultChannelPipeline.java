@@ -1379,6 +1379,7 @@ public class DefaultChannelPipeline implements ChannelPipeline {
 
         @Override
         public void channelRegistered(ChannelHandlerContext ctx) {
+            // 会检查通道中是否有需要延迟执行的任务 如果有，就执行，然后调用 Context 的 fireChannelRegistered 方法，而不是 pipeline 的 fireChannelRegistered 方法
             invokeHandlerAddedIfNeeded();
             ctx.fireChannelRegistered();
         }
