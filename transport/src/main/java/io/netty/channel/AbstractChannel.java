@@ -473,7 +473,7 @@ public abstract class AbstractChannel extends DefaultAttributeMap implements Cha
                 register0(promise);
             } else {
                 try {
-                    //
+                    // 这里会调用 singleThreadEventExecutor.execute(Runnable runnable) 这里提交的 Runnable 是
                     eventLoop.execute(new Runnable() {
                         @Override
                         public void run() {

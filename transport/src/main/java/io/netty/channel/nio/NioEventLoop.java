@@ -446,7 +446,7 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                     case SelectStrategy.BUSY_WAIT:
                         // fall-through to SELECT since the busy-wait is not supported with NIO
 
-                    case SelectStrategy.SELECT:
+                    case SelectStrategy.SELECT: // 轮训 I/O事件
                         long curDeadlineNanos = nextScheduledTaskDeadlineNanos();
                         if (curDeadlineNanos == -1L) {
                             curDeadlineNanos = NONE; // nothing on the calendar
@@ -476,24 +476,27 @@ public final class NioEventLoop extends SingleThreadEventLoop {
                 selectCnt++;
                 cancelledKeys = 0;
                 needsToSelectAgain = false;
+                // inRatio 用来调整事件处理的时间占比
                 final int ioRatio = this.ioRatio;
                 boolean ranTasks;
                 if (ioRatio == 100) {
                     try {
                         if (strategy > 0) {
-                            processSelectedKeys();
+                            processSelectedKeys(); // 处理I/O事件
                         }
                     } finally {
                         // Ensure we always run tasks.
-                        ranTasks = runAllTasks();
+                        ranTasks = runAllTasks(); //处理所有的任务
                     }
                 } else if (strategy > 0) {
                     final long ioStartTime = System.nanoTime();
                     try {
+                        // 处理I/O事件
                         processSelectedKeys();
                     } finally {
                         // Ensure we always run tasks.
                         final long ioTime = System.nanoTime() - ioStartTime;
+                        // // 处理完 I/O 事件，再处理异步任务队列
                         ranTasks = runAllTasks(ioTime * (100 - ioRatio) / ioRatio);
                     }
                 } else {

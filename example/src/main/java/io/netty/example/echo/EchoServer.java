@@ -57,7 +57,9 @@ public final class EchoServer {
             b.group(bossGroup, workerGroup)
              .channel(NioServerSocketChannel.class)
              .option(ChannelOption.SO_BACKLOG, 100)
+             // 设置ServerSocketChannel 对应的 Handler
              .handler(new LoggingHandler(LogLevel.INFO))
+             // 设置 SocketChannel 对应的 Handler
              .childHandler(new ChannelInitializer<SocketChannel>() {
                  @Override
                  public void initChannel(SocketChannel ch) throws Exception {

@@ -376,6 +376,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         boolean ranAtLeastOne = false;
 
         do {
+            // 合并定时任务到普通队列
             fetchedAll = fetchFromScheduledTaskQueue();
             if (runAllTasksFrom(taskQueue)) {
                 ranAtLeastOne = true;
@@ -385,6 +386,7 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
         if (ranAtLeastOne) {
             lastExecutionTime = ScheduledFutureTask.nanoTime();
         }
+        // 收尾
         afterRunningAllTasks();
         return ranAtLeastOne;
     }
@@ -423,10 +425,12 @@ public abstract class SingleThreadEventExecutor extends AbstractScheduledEventEx
      * @return {@code true} if at least one task was executed.
      */
     protected final boolean runAllTasksFrom(Queue<Runnable> taskQueue) {
+        // 从普通队列取出任务
         Runnable task = pollTaskFrom(taskQueue);
         if (task == null) {
             return false;
         }
+        // 安全的执行任务
         for (;;) {
             safeExecute(task);
             task = pollTaskFrom(taskQueue);
